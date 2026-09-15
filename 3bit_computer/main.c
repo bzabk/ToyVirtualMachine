@@ -1,3 +1,5 @@
+#include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -82,13 +84,86 @@ void set_virtual_machine_to_stage2(VirtualMachine* vm) {
     vm->register_x = 8642024;
 }
 
+int get_combo_value(VirtualMachine* vm,int8_t operand) {
+    switch (operand) {
+        case 0: return 0;
+        case 1: return 1;
+        case 2: return 2;
+        case 3: return 3;
+        case 4: return vm->register_x;
+        case 5: return vm->register_y;
+        case 6: return vm->register_z;
+        default: return -1;
+    }
+}
+
 void single_cycle(VirtualMachine* vm) {
 
+
+    int instruction_pointer = vm->instruction_pointer;
+    int instruction = vm->program->instructions[instruction_pointer];
+    int operand = vm->program->instructions[instruction_pointer+1];
+    int combo = get_combo_value(vm,operand);
+    int placeholder;
+    bool increment_pc = true;
+    switch (instruction) {
+        case 0:
+            placeholder = vm->register_x;
+            vm->register_x = placeholder >> combo;
+            increment_pc  = true;
+            break;
+        case 1:
+            vm->register_y = vm->register_y^operand;
+            increment_pc  = true;
+            break;
+        case 2:
+            vm->register_y = combo % 8;
+            increment_pc  = true;
+            break;
+        case 3:
+            if (vm->register_x!=0) {
+                vm->instruction_pointer = operand;
+                increment_pc = false;
+            }
+            break;
+        case 4:
+            vm->register_y = vm->register_y^vm->register_z;
+            increment_pc = true;
+            break;
+        case 5:
+            placeholder = combo % 8;
+            increment_pc = true;
+            printf("%d,", placeholder);
+            break;
+        case 6:
+            placeholder = vm->register_x;
+            vm->register_y = placeholder >> combo;
+            increment_pc  = true;
+            break;
+        case 7:
+            placeholder = vm->register_x;
+            vm->register_z = placeholder >> combo;
+            increment_pc  = true;
+            break;
+    }
+    if (increment_pc) {
+        vm->instruction_pointer+=2;
+    }
 };
 
 
 
 int main(void) {
-    printf("Hello, World!\n");
+    VirtualMachine vm;
+
+    set_virtual_machine_to_stage1(&vm);
+
+    while (vm.instruction_pointer < vm.program->length) {
+        single_cycle(&vm);
+    }
+
+    free(vm.program);
     return 0;
+
+
 }
