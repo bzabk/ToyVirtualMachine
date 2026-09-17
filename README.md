@@ -1,0 +1,1 @@
+Coding small virtual machine based on task from https://adventofcode.com/2024/day/17
